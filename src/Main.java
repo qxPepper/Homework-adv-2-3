@@ -1,20 +1,25 @@
 public class Main {
-    private static final int TIME_SLEEP_1 = 500;
-    private static final int TIME_SLEEP_2 = 1500;
+    private static final int TIME_SLEEP = 1000;
+    private static final int COUNT_GARCONS = 2;
+    private static final int MAX_COUNT_GUESTS = 5;
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         Restaurant restaurant = new Restaurant();
 
         System.out.println("Повар на работе!");
-        new Thread(restaurant::garconActions, "Официант_1").start();
-        new Thread(restaurant::garconActions, "Официант_2").start();
 
-        new Thread(restaurant::guestActions, "Посетитель_1").start();
+        for (int i = 1; i <= COUNT_GARCONS; i++) {
+            new Thread(restaurant::garconActions, "Официант_" + i).start();
+        }
 
-        Thread.sleep(TIME_SLEEP_1);
-        new Thread(restaurant::guestActions, "Посетитель_2").start();
+        for (int i = 1; i <= MAX_COUNT_GUESTS; i++) {
+            new Thread(restaurant::guestActions, "Посетитель_" + i).start();
 
-        Thread.sleep(TIME_SLEEP_2);
-        new Thread(restaurant::guestActions, "Посетитель_3").start();
+            try {
+                Thread.sleep(TIME_SLEEP);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

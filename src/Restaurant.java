@@ -4,33 +4,35 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Restaurant {
     private static final int TIME_SLEEP = 1000;
+    private static final int MAX_COUNT_GUESTS = 5;
 
-    private boolean isOrder;
-    private boolean isReady;
+    private int countGuests;
 
     Lock lock = new ReentrantLock();
-    Condition makeOrder = lock.newCondition();
-    Condition completeOrder = lock.newCondition();
+    Condition bringDish = lock.newCondition();
+    Condition makeDish = lock.newCondition();
 
-    void guestActions() {
-        System.out.println(Thread.currentThread().getName() + " в ресторане.");
+    void garconActions() {
+        System.out.println(Thread.currentThread().getName() + " на работе!");
         lock.lock();
+
         try {
-            Thread.sleep(TIME_SLEEP);
+            while (true) {
+                //Volatile, threadlocal atomics - следующая лекция, поэтому пока без них.
+                while (countGuests == MAX_COUNT_GUESTS) {
+                    return;
+                }
 
-            System.out.println(Thread.currentThread().getName() + " сделал заказ.");
-            while (!isOrder) {
-                makeOrder.await();
+                Thread.sleep(TIME_SLEEP);
+                System.out.println(Thread.currentThread().getName() + " взял заказ.");
+
+                makeDish.await();
+
+                Thread.sleep(TIME_SLEEP);
+                System.out.println(Thread.currentThread().getName() + " несет заказ.");
+
+                bringDish.signalAll();
             }
-
-            Thread.sleep(TIME_SLEEP);
-            System.out.println(Thread.currentThread().getName() + " приступил к еде.");
-
-            Thread.sleep(TIME_SLEEP);
-            System.out.println(Thread.currentThread().getName() + " вышел из ресторана.");
-
-            isReady = true;
-            completeOrder.signalAll();
 
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -39,27 +41,24 @@ public class Restaurant {
         }
     }
 
-    void garconActions() {
-        System.out.println(Thread.currentThread().getName() + " на работе!");
+    void guestActions() {
+        System.out.println(Thread.currentThread().getName() + " в ресторане.");
         lock.lock();
         try {
-            Thread.sleep(TIME_SLEEP);
-            System.out.println(Thread.currentThread().getName() + " взял заказ.");
-            isOrder = true;
-
-            makeOrder.signalAll();
-
-            Thread.sleep(TIME_SLEEP);
             System.out.println("Повар готовит блюдо.");
             Thread.sleep(TIME_SLEEP);
             System.out.println("Повар закончил готовить блюдо.");
 
-            Thread.sleep(TIME_SLEEP);
-            System.out.println(Thread.currentThread().getName() + " несет заказ.");
+            countGuests++;
 
-            while (isReady) {
-                completeOrder.await();
-            }
+            makeDish.signalAll();
+
+            bringDish.await();
+
+            Thread.sleep(TIME_SLEEP);
+            System.out.println(Thread.currentThread().getName() + " приступил к еде.");
+            Thread.sleep(TIME_SLEEP);
+            System.out.println(Thread.currentThread().getName() + " вышел из ресторана.");
 
         } catch (InterruptedException e) {
             e.printStackTrace();
